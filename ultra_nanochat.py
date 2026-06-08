@@ -272,11 +272,33 @@ class Tokenizer:
         return tokenizer
 
 
+class CheckpointManager:
+    "save and load model and optimizer checkpoints for each stage"
+
+    def save_checkpoint(model, tokenizer, optimizer, step, stage_name, run_dir):
+        checkpoint_dir = f"{run_dir}/checkpoint_{stage_name.lower()}"
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        torch.save(
+            {
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+            },
+            f"{checkpoint_dir}/checkpoint_step_{step + 1}.pt",
+        )
+        print(f"Checkpoint saved for {stage_name} at step {step + 1}")
+
+    def load_checkpoint(model, optimizer, step, stage_name, run_dir):
+        checkpoint_dir = f"{run_dir}/checkpoint_{stage_name.lower()}"
+        checkpoint_path = f"{checkpoint_dir}/checkpoint_step_{step + 1}.pt"
+        checkpoint = torch.load(checkpoint_path, map_location=Config.device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        print(f"Checkpoint loaded for {stage_name} from {checkpoint_path}")
+
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
-
-
 def run_evaluation(
     model, tokenizer, stage_name, step, total_steps, prompt_text, expected_output
 ):
@@ -509,7 +531,7 @@ def get_tokenizer_iterator():
             yield text
 
 
-run_dir = "runs/temp_run"
+run_dir = "runs/temp_run2"
 if not os.path.exists(run_dir):
     os.makedirs(run_dir)
 
@@ -592,6 +614,12 @@ for step in range(Config.pretrain_steps):
             input_prompt,
             expected_output,
         )
+        CheckpointManager.save_checkpoint(
+            model, tokenizer, optimizer, step, "PRETRAINING", run_dir
+        )
+CheckpointManager.save_checkpoint(
+    model, tokenizer, optimizer, step, "PRETRAINING", run_dir
+)
 # ============================================================================
 # STAGE 2: SUPERVISED FINE-TUNING (SFT)
 # ============================================================================
@@ -662,6 +690,10 @@ for step in range(Config.sft_steps):
             input_prompt,
             expected_output,
         )
+        CheckpointManager.save_checkpoint(
+            model, tokenizer, optimizer, step, "SFT", run_dir
+        )
+CheckpointManager.save_checkpoint(model, tokenizer, optimizer, step, "SFT", run_dir)
 
 # ============================================================================
 # STAGE 3: REINFORCEMENT LEARNING (RL)
@@ -780,5 +812,9 @@ for step in range(Config.rl_steps):
         run_evaluation(
             model, tokenizer, "RL", step, Config.rl_steps, input_prompt, expected_output
         )
+        CheckpointManager.save_checkpoint(
+            model, tokenizer, optimizer, step, "RL", run_dir
+        )
+CheckpointManager.save_checkpoint(model, tokenizer, optimizer, step, "RL", run_dir)
 
 print("\nTRAINING PIPELINE COMPLETE!")
