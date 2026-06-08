@@ -1,3 +1,6 @@
 .venv/
 
 data/
+runs/
+notebooks/
+.pre-commit-config.yaml
