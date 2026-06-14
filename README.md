@@ -1,4 +1,4 @@
-# Ultra Nano Chat: The LLM Training Pipeline
+# Ultra Nano Chat: The Almost LLM Training Pipeline
 
 > **⚠️ WORK IN PROGRESS ⚠️**
 > This repository is actively under development. The code and concepts are being refined, so expect rough edges as this project evolves.
